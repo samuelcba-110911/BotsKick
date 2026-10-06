@@ -56,3 +56,14 @@ def format_report(info: dict) -> str:
     if not info:
         return "No encontré metadatos EXIF en esta imagen (puede haber sido limpiada)."
     return "\n".join(f"{k}: {v}" for k, v in info.items())
+
+
+def strip(data: bytes) -> tuple[bytes, str]:
+    """Devuelve la imagen sin metadatos (re-codificada desde los píxeles) y su extensión."""
+    img = Image.open(io.BytesIO(data))
+    fmt = img.format if img.format in ("JPEG", "PNG", "WEBP") else "PNG"
+    clean = Image.new(img.mode, img.size)
+    clean.putdata(list(img.getdata()))
+    out = io.BytesIO()
+    clean.save(out, format=fmt)
+    return out.getvalue(), {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}[fmt]
