@@ -22,6 +22,8 @@ from exif import extract, format_report, strip
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s", level=logging.INFO
 )
+# httpx loguea la URL completa de la API de Telegram, que contiene el token
+logging.getLogger("httpx").setLevel(logging.WARNING)
 log = logging.getLogger("fsociety")
 MAX_BYTES = 20 * 1024 * 1024
 
