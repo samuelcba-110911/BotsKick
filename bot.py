@@ -10,12 +10,12 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s", level=logging.INFO
 )
-log = logging.getLogger("botskick")
+log = logging.getLogger("fsociety")
 MAX_BYTES = 20 * 1024 * 1024
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("¡Hola! Soy BotsKick. Usa /help para ver comandos.")
+    await update.message.reply_text("Hello, friend. Somos fsociety.\nUsa /help para ver comandos.")
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -1,4 +1,4 @@
-# BotsKick
+# fsociety bot
 
 Bots de Telegram en Python (`python-telegram-bot`), desplegados en Railway.
 
