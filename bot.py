@@ -1,6 +1,7 @@
 import logging
 import os
 
+from exif import extract, format_report
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 
@@ -8,6 +9,7 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s", level=logging.INFO
 )
 log = logging.getLogger("botskick")
+MAX_BYTES = 20 * 1024 * 1024
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -15,11 +17,34 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("/start - saludo\n/help - esta ayuda\n/ping - prueba")
+    await update.message.reply_text("/start - saludo\n/help - esta ayuda\n/ping - prueba\n\nEnvíame una foto COMO ARCHIVO (adjuntar > archivo) y te muestro sus metadatos EXIF.")
 
 
 async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("pong")
+
+
+async def photo_warning(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(
+        "Telegram borra los metadatos de las fotos normales. "
+        "Reenvíala como archivo: adjuntar (clip) > Archivo, sin comprimir."
+    )
+
+
+async def metadata(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    doc = update.message.document
+    if doc.file_size and doc.file_size > MAX_BYTES:
+        await update.message.reply_text("Archivo demasiado grande (máx. 20 MB).")
+        return
+    tg_file = await doc.get_file()
+    data = bytes(await tg_file.download_as_bytearray())
+    try:
+        report = format_report(extract(data))
+    except Exception:
+        log.exception("No se pudo leer la imagen")
+        await update.message.reply_text("No pude leer ese archivo como imagen.")
+        return
+    await update.message.reply_text(report)
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -35,6 +60,8 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("ping", ping))
+    app.add_handler(MessageHandler(filters.PHOTO, photo_warning))
+    app.add_handler(MessageHandler(filters.Document.IMAGE, metadata))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
 
     log.info("Bot iniciado (polling)")
