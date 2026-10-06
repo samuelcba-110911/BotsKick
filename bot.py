@@ -1,5 +1,7 @@
 import logging
 import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from exif import extract, format_report
 from telegram import Update
@@ -51,11 +53,31 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(update.message.text)
 
 
+class _Health(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, *args) -> None:
+        pass
+
+
+def start_health_server() -> None:
+    """Render exige que los Web Services escuchen en $PORT; Railway no lo necesita."""
+    port = os.environ.get("PORT")
+    if port:
+        server = HTTPServer(("0.0.0.0", int(port)), _Health)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        log.info("Health check en el puerto %s", port)
+
+
 def main() -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         raise SystemExit("Falta la variable de entorno TELEGRAM_BOT_TOKEN")
 
+    start_health_server()
     app = Application.builder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
